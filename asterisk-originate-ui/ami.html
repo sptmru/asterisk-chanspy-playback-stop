@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asterisk Channel Manager</title>
+    <style>
+        /* Add your CSS styles here */
+        body { font-family: Arial, sans-serif; }
+        input, button { margin: 5px; }
+    </style>
+</head>
+<body>
+<h1>Asterisk Channel Manager</h1>
+<div>
+    <label for="channelName">Channel Name:</label>
+    <input type="text" id="channelName" name="channelName" required>
+    <button onclick="setChannel()">Set Channel</button>
+</div>
+<div>
+    <button onclick="muteChannel()">Mute</button>
+    <button onclick="unmuteChannel()">Unmute</button>
+    <button onclick="playMessage()">Play</button>
+    <button onclick="stopPlaying()">Stop</button>
+</div>
+<script>
+  let selectedChannel = null;
+  const baseUrl = 'http://localhost:3000';
+
+  function setChannel() {
+    const channelInput = document.getElementById('channelName');
+    selectedChannel = channelInput.value.trim();
+
+    if (!selectedChannel) {
+      alert('Please enter a channel name.');
+      return;
+    }
+    // Optionally, you can clear the input after setting the channel
+    // channelInput.value = '';
+    console.log('Selected channel:', selectedChannel);
+  }
+
+  function sendCommand(endpoint) {
+    if (!selectedChannel) {
+      return alert('Please set a channel first.');
+    }
+    fetch(`${baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ channelName: selectedChannel })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => console.log(data))
+      .catch(error => console.error('Error:', error));
+  }
+
+  function muteChannel() {
+    sendCommand('/mute');
+  }
+
+  function unmuteChannel() {
+    sendCommand('/unmute');
+  }
+
+  function playMessage() {
+    sendCommand('/play');
+  }
+
+  function stopPlaying() {
+    sendCommand('/stop-play');
+  }
+</script>
+
+</body>
+</html>

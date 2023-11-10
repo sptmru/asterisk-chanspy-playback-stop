@@ -5,12 +5,14 @@
   "main": "app.js",
   "scripts": {
     "eslint-check": "npx eslint . --ext .ts",
-    "app": "ts-node --swc app.ts"
+    "app": "ts-node --swc app.ts",
+    "ami": "ts-node --swc app.ami.ts"
   },
   "author": "Soslan Aldatov",
   "license": "ISC",
   "dependencies": {
     "ari-client": "^2.2.0",
+    "asterisk-manager": "^0.2.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.18.2"

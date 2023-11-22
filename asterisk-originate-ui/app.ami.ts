@@ -2,29 +2,18 @@ import express, { Request, Response } from 'express';
 import * as bodyParser from 'body-parser';
 import cors from 'cors';
 
-// @ts-expect-error: no types available for package
 import AMI from 'asterisk-manager';
 
 const app = express();
 const port = 3000;
 
-const AMI_HOST = 'asterisk.orb.local';
+const AMI_HOST = '151.80.247.240';
 const AMI_PORT = 5038;
 const AMI_USERNAME = 'admin';
-const AMI_PASSWORD = '12345';
+const AMI_PASSWORD = 'sgypppvf';
 
 const asterisk = new AMI(AMI_PORT, AMI_HOST, AMI_USERNAME, AMI_PASSWORD, true);
 asterisk.keepConnected();
-
-// Connect to ARI
-// let ari: Client;
-// connect(ARI_URL, ARI_USER, ARI_PASS)
-//   .then((client: Client) => {
-//     ari = client;
-//   })
-//   .catch((error: Error) => {
-//     console.error('Error connecting to ARI:', error);
-//   });
 
 app.use(cors<Request>());
 
@@ -34,34 +23,51 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
 
-app.get('/channels', (_req: Request, res: Response) => {
-  asterisk.action({
-    action: 'CoreShowChannels'
-  }, (err: never, result: never) => {
-    if (err) {
-      console.error(err);
-    }
-    console.log(result);
-  });
+function getActiveChannels(ami) {
+  return new Promise((resolve, reject) => {
+    const channelsInfo: never[] = [];
+    ami.action({
+      action: 'CoreShowChannels'
+    }, (err: never) => {
+      if (err) {
+        reject(err);
+      }
+    });
 
-  asterisk.on('response', (evt: never) => {
-    console.log(evt);
-    res.send(evt);
+    setTimeout(() => {
+      resolve(channelsInfo);
+    }, 500);
+
+    ami.on('coreshowchannel', function(evt: { channel: never; calleridnum: never; }) {
+      console.log('CoreShowChannel event received');
+      console.log(evt);
+      // Assuming you're interested in the Channel and CallerIDNum attributes.
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      channelsInfo.push({channel: evt.channel, callerID: evt.calleridnum});
+    });
   });
+}
+
+app.get('/channels', async (_req: Request, res: Response) => {
+  try {
+    const channels = await getActiveChannels(asterisk);
+    res.send({ channels: channels });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: 'There was an error connecting to the Asterisk server' });
+  }
 });
 
 app.post('/mute', (req: Request, res: Response) => {
   const { channelName } = req.body;
 
   asterisk.action({
-    'action': 'Originate',
-    'channel': 'Local/s',
-    'context': 'mute',
-    'exten': 's',
-    'priority': 1,
-    'variable': {
-      'CHAN': channelName
-    }
+    'action': 'MuteAudio',
+    'channel': channelName,
+    'direction': 'out',
+    'state': 'on',
+    'ActionID': 2,
   });
 
   res.json({ status: 'Channel was muted' });
@@ -71,14 +77,11 @@ app.post('/unmute', (req: Request, res: Response) => {
   const { channelName } = req.body;
 
   asterisk.action({
-    'action': 'Originate',
-    'channel': 'Local/s',
-    'context': 'unmute',
-    'exten': 's',
-    'priority': 1,
-    'variable': {
-      'CHAN': channelName
-    }
+    'action': 'MuteAudio',
+    'channel': channelName,
+    'direction': 'out',
+    'state': 'off',
+    'ActionID': 2,
   });
 
   res.json({ status: 'Channel was unmuted' });
@@ -95,6 +98,24 @@ app.post('/play', (req: Request, res: Response) => {
     'priority': 1,
     'variable': {
       'CHAN': channelName
+    }
+  });
+
+  res.json({ status: 'Playing message to channel' });
+});
+
+app.post('/play/:soundName', (req: Request, res: Response) => {
+  const { channelName } = req.body;
+
+  asterisk.action({
+    'action': 'Originate',
+    'channel': 'Local/s@spy',
+    'context': 'playback',
+    'exten': 's',
+    'priority': 1,
+    'variable': {
+      'CHAN': channelName,
+      'SOUNDNAME': req.params.soundName,
     }
   });
 

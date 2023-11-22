@@ -5,7 +5,6 @@
   "main": "app.js",
   "scripts": {
     "eslint-check": "npx eslint . --ext .ts",
-    "app": "ts-node --swc app.ts",
     "ami": "ts-node --swc app.ami.ts"
   },
   "author": "Soslan Aldatov",

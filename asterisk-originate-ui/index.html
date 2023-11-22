@@ -9,7 +9,7 @@
         body { font-family: Arial, sans-serif; }
         #channels { list-style-type: none; }
         #channels li { cursor: pointer; padding: 5px; border: 1px solid #ddd; margin-top: -1px; background-color: #f6f6f6; }
-        #channels li.selected { background-color: #e9e9e9; }
+        #channels li.selected { background-color: #99e9e9; }
         button { margin: 5px; }
     </style>
 </head>
@@ -28,17 +28,18 @@
 <script>
   let selectedChannel = null;
 
-  const baseUrl = 'http://151.80.247.240:3000';
+  const baseUrl = 'http://localhost:3000';
+  // const baseUrl = 'http://151.80.247.240:3000';
   function getChannels() {
     fetch(`${baseUrl}/channels`)
       .then(response => response.json())
       .then(data => {
         const channelsList = document.getElementById('channels');
         channelsList.innerHTML = ''; // Clear the current list
-        data.forEach(channel => {
+        data.channels.forEach(channel => {
           const li = document.createElement('li');
-          li.textContent = channel;
-          li.onclick = function() { selectChannel(channel); };
+          li.textContent = channel.channel;
+          li.onclick = function() { selectChannel(channel.channel); };
           channelsList.appendChild(li);
         });
       })
@@ -46,6 +47,7 @@
   }
 
   function selectChannel(channel) {
+    console.log('Selected channel:', channel)
     selectedChannel = channel;
     const channelsListItems = document.querySelectorAll('#channels li');
     channelsListItems.forEach(li => {
